@@ -127,7 +127,7 @@ function addParticipant(event) {
   state.lastAssignedId = participant.id;
   ui.nameInput.value = "";
   ui.validation.textContent = "";
-  commit();
+  commit(participant.id);
   ui.nameInput.focus();
 }
 
@@ -160,9 +160,69 @@ function randomIndex(length) {
   return buffer[0] % length;
 }
 
-function commit() {
+function commit(animateParticipantId = null) {
   saveState();
   render();
+  if (animateParticipantId) {
+    requestAnimationFrame(() => animateAssignment(animateParticipantId));
+  }
+}
+
+function animateAssignment(participantId) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const person = state.participants.find(candidate => candidate.id === participantId);
+  const target = ui.teamGrid.querySelector(`.team-member[data-participant-id="${CSS.escape(participantId)}"]`);
+  if (!person || !target || ui.lastAssigned.hidden) return;
+
+  const sourceRect = ui.lastAssigned.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  if (!sourceRect.width || !targetRect.width) return;
+
+  const flight = document.createElement("div");
+  flight.className = "assignment-flight";
+  flight.style.setProperty("--flight-team-color", TEAM_COLORS[person.teamNumber - 1][0]);
+  flight.style.left = `${sourceRect.left}px`;
+  flight.style.top = `${sourceRect.top}px`;
+  flight.style.width = `${sourceRect.width}px`;
+  flight.style.height = `${sourceRect.height}px`;
+
+  const label = document.createElement("small");
+  label.textContent = "배정 완료";
+  const name = document.createElement("strong");
+  name.textContent = person.name;
+  const team = document.createElement("span");
+  team.textContent = state.teamNames[person.teamNumber - 1];
+  flight.append(label, name, team);
+  document.body.append(flight);
+
+  target.classList.add("receiving");
+  const translateX = targetRect.left - sourceRect.left;
+  const translateY = targetRect.top - sourceRect.top;
+  const scaleX = targetRect.width / sourceRect.width;
+  const scaleY = targetRect.height / sourceRect.height;
+
+  const animation = flight.animate([
+    { transform: "translate(0, 0) scale(1)", opacity: 1, offset: 0 },
+    { transform: "translate(0, -8px) scale(1.015)", opacity: 1, offset: .16 },
+    { transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`, opacity: .92, offset: 1 }
+  ], {
+    duration: 780,
+    easing: "cubic-bezier(.22, .82, .28, 1)",
+    fill: "forwards"
+  });
+
+  animation.finished
+    .catch(() => undefined)
+    .finally(() => {
+      flight.remove();
+      target.classList.remove("receiving");
+      target.animate([
+        { transform: "scale(.96)", boxShadow: "0 0 0 0 rgba(37, 99, 235, .35)" },
+        { transform: "scale(1.035)", boxShadow: "0 0 0 7px rgba(37, 99, 235, 0)" },
+        { transform: "scale(1)", boxShadow: "none" }
+      ], { duration: 360, easing: "ease-out" });
+    });
 }
 
 function render() {
@@ -266,6 +326,7 @@ function renderTeams() {
       members.forEach(person => {
         const member = document.createElement("div");
         member.className = "team-member";
+        member.dataset.participantId = person.id;
         member.classList.toggle("highlight", person.id === state.lastAssignedId);
         member.textContent = person.name;
         member.title = person.name;
