@@ -42,11 +42,11 @@ public partial class MainWindow : Window
 
     private void AddButton_OnClick(object sender, RoutedEventArgs e) => FocusNameInput();
 
-    private void WeightSettings_OnExecuted(object sender, ExecutedRoutedEventArgs e) => OpenWeightSettings();
+    private void WeightSettings_OnExecuted(object sender, ExecutedRoutedEventArgs e) => OpenSettings();
 
-    private void WeightSettingsButton_OnClick(object sender, RoutedEventArgs e) => OpenWeightSettings();
+    private void WeightSettingsButton_OnClick(object sender, RoutedEventArgs e) => OpenSettings();
 
-    private void OpenWeightSettings()
+    private void OpenSettings()
     {
         var window = new TeamWeightSettingsWindow(
             _viewModel.Team1Name,
@@ -59,12 +59,12 @@ public partial class MainWindow : Window
         };
 
         if (window.ShowDialog() == true)
-            _ = SaveTeamWeightsAsync(window.TeamWeights);
+            _ = SaveTeamSettingsAsync(window.TeamNames, window.TeamWeights);
     }
 
-    private async Task SaveTeamWeightsAsync(IReadOnlyList<int> weights)
+    private async Task SaveTeamSettingsAsync(IReadOnlyList<string> names, IReadOnlyList<int> weights)
     {
-        await _viewModel.SetTeamWeightsAsync(weights);
+        await _viewModel.SetTeamSettingsAsync(names, weights);
         FocusNameInput();
     }
 

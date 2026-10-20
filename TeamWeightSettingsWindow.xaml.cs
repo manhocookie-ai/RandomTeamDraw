@@ -21,6 +21,7 @@ public partial class TeamWeightSettingsWindow : Window
     }
 
     public IReadOnlyList<WeightRow> Rows { get; }
+    public string[] TeamNames => Rows.Select(row => row.TeamName.Trim()).ToArray();
     public int[] TeamWeights => Rows.Select(row => row.Weight).ToArray();
 
     private static WeightRow? GetRow(object sender) => (sender as Button)?.Tag as WeightRow;
@@ -37,20 +38,40 @@ public partial class TeamWeightSettingsWindow : Window
         if (row is not null) row.Weight = Math.Min(10, row.Weight + 1);
     }
 
-    private void Save_OnClick(object sender, RoutedEventArgs e) => DialogResult = true;
+    private void Save_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (Rows.Any(row => string.IsNullOrWhiteSpace(row.TeamName) || row.TeamName.Trim().Length > 20))
+        {
+            MessageBox.Show(this, "조 이름은 공백이 아닌 20자 이하로 입력해 주세요.", "설정 확인",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        DialogResult = true;
+    }
     private void Cancel_OnClick(object sender, RoutedEventArgs e) => DialogResult = false;
 
     public sealed class WeightRow : INotifyPropertyChanged
     {
         private int _weight;
+        private string _teamName;
 
         public WeightRow(string teamName, int weight)
         {
-            TeamName = teamName;
+            _teamName = teamName;
             _weight = Math.Clamp(weight, -10, 10);
         }
 
-        public string TeamName { get; }
+        public string TeamName
+        {
+            get => _teamName;
+            set
+            {
+                if (_teamName == value) return;
+                _teamName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TeamName)));
+            }
+        }
         public int Weight
         {
             get => _weight;

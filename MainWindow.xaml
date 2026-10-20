@@ -266,8 +266,8 @@
         </Grid>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="배정 설정" Style="{StaticResource NeutralButton}"
-                    Click="WeightSettingsButton_OnClick" ToolTip="조별 배정 가중치를 설정합니다" />
+            <Button Content="설정" Style="{StaticResource NeutralButton}"
+                    Click="WeightSettingsButton_OnClick" ToolTip="조 이름과 배정 가중치를 설정합니다" />
             <Button Content="전체 초기화" Style="{StaticResource DangerButton}" Click="ResetButton_OnClick" ToolTip="모든 참가자를 삭제합니다" />
         </StackPanel>
     </Grid>

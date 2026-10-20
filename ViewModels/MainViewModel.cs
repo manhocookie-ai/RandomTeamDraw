@@ -12,13 +12,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly TeamAssignmentService _assignmentService;
     private readonly SessionStorageService _storageService;
-    private readonly AppConfig _config;
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private string _newParticipantName = string.Empty;
     private string? _validationMessage;
     private string _saveStatus = "불러오는 중";
     private Guid? _lastAssignedId;
     private readonly int[] _teamWeights = new int[4];
+    private readonly string[] _teamNames = new string[4];
 
     public MainViewModel()
         : this(new TeamAssignmentService(), new SessionStorageService(), new ConfigService().Load())
@@ -32,7 +32,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         _assignmentService = assignmentService;
         _storageService = storageService;
-        _config = configResult.Config;
+        _teamNames[0] = configResult.Config.Team1Name;
+        _teamNames[1] = configResult.Config.Team2Name;
+        _teamNames[2] = configResult.Config.Team3Name;
+        _teamNames[3] = configResult.Config.Team4Name;
         StartupWarning = configResult.Warning;
         AddParticipantCommand = new AsyncRelayCommand(AddParticipantAsync);
         BeginEditCommand = new RelayCommand<Participant>(participant =>
@@ -75,10 +78,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool IsSaveError => SaveStatus == "저장 실패";
     public Guid? LastAssignedId => _lastAssignedId;
     public Participant? LastAssignedParticipant => Participants.FirstOrDefault(p => p.Id == _lastAssignedId);
-    public string Team1Name => _config.Team1Name;
-    public string Team2Name => _config.Team2Name;
-    public string Team3Name => _config.Team3Name;
-    public string Team4Name => _config.Team4Name;
+    public string Team1Name => _teamNames[0];
+    public string Team2Name => _teamNames[1];
+    public string Team3Name => _teamNames[2];
+    public string Team4Name => _teamNames[3];
     public int TotalCount => Participants.Count;
     public int Team1Count => GetTeamCount(1);
     public int Team2Count => GetTeamCount(2);
@@ -101,9 +104,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             var result = await _storageService.LoadAsync();
+            Array.Copy(result.Session.GetTeamNames(_teamNames), _teamNames, 4);
             foreach (var participant in result.Session.Participants)
             {
-                participant.DisplayTeamName = _config.GetTeamName(participant.TeamNumber);
+                participant.DisplayTeamName = GetTeamName(participant.TeamNumber);
                 participant.IsHighlighted = participant.Id == result.Session.LastAssignedId;
                 Participants.Add(participant);
             }
@@ -130,12 +134,24 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public int[] GetTeamWeights() => (int[])_teamWeights.Clone();
+    public string[] GetTeamNames() => (string[])_teamNames.Clone();
 
-    public async Task SetTeamWeightsAsync(IReadOnlyList<int> weights)
+    public async Task SetTeamSettingsAsync(IReadOnlyList<string> names, IReadOnlyList<int> weights)
     {
+        if (names.Count != 4) throw new ArgumentException("조 이름은 4개여야 합니다.", nameof(names));
         if (weights.Count != 4) throw new ArgumentException("조 가중치는 4개여야 합니다.", nameof(weights));
         for (var index = 0; index < 4; index++)
+        {
+            var name = names[index].Trim();
+            if (name.Length is 0 or > 20)
+                throw new ArgumentException("조 이름은 공백이 아닌 20자 이하 문자열이어야 합니다.", nameof(names));
+            _teamNames[index] = name;
             _teamWeights[index] = Math.Clamp(weights[index], -10, 10);
+        }
+
+        foreach (var participant in Participants)
+            participant.DisplayTeamName = GetTeamName(participant.TeamNumber);
+        NotifyTeamNamesChanged();
         await SaveAsync();
     }
 
@@ -145,7 +161,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (name is null) return;
 
         var participant = new Participant(Guid.NewGuid(), name, _assignmentService.ChooseTeam(Participants, _teamWeights));
-        participant.DisplayTeamName = _config.GetTeamName(participant.TeamNumber);
+        participant.DisplayTeamName = GetTeamName(participant.TeamNumber);
         foreach (var existing in Participants) existing.IsHighlighted = false;
         participant.IsHighlighted = true;
         Participants.Add(participant);
@@ -191,7 +207,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 Team1Weight = _teamWeights[0],
                 Team2Weight = _teamWeights[1],
                 Team3Weight = _teamWeights[2],
-                Team4Weight = _teamWeights[3]
+                Team4Weight = _teamWeights[3],
+                Team1Name = _teamNames[0],
+                Team2Name = _teamNames[1],
+                Team3Name = _teamNames[2],
+                Team4Name = _teamNames[3]
             };
             await _storageService.SaveAsync(snapshot, synchronizeBackup);
             SaveStatus = "저장됨";
@@ -238,6 +258,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Participants.Where(p => p.TeamNumber == teamNumber);
 
     private int GetTeamCount(int teamNumber) => Participants.Count(p => p.TeamNumber == teamNumber);
+
+    private string GetTeamName(int teamNumber) =>
+        teamNumber is >= 1 and <= 4 ? _teamNames[teamNumber - 1] : $"{teamNumber}조";
+
+    private void NotifyTeamNamesChanged()
+    {
+        OnPropertyChanged(nameof(Team1Name));
+        OnPropertyChanged(nameof(Team2Name));
+        OnPropertyChanged(nameof(Team3Name));
+        OnPropertyChanged(nameof(Team4Name));
+        OnPropertyChanged(nameof(LastAssignedParticipant));
+    }
 
     private static string? CombineWarnings(string? first, string? second)
     {
