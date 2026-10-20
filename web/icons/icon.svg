@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="랜덤 조 편성">
+  <rect width="512" height="512" rx="112" fill="#172033"/>
+  <circle cx="176" cy="176" r="56" fill="#60a5fa"/>
+  <circle cx="336" cy="176" r="56" fill="#34d399"/>
+  <circle cx="176" cy="336" r="56" fill="#c084fc"/>
+  <circle cx="336" cy="336" r="56" fill="#fbbf24"/>
+  <path d="M226 176h60M176 226v60M336 226v60M226 336h60" fill="none" stroke="#fff" stroke-width="24" stroke-linecap="round" opacity=".95"/>
+  <circle cx="256" cy="256" r="35" fill="#fff"/>
+  <path d="m241 256 11 11 21-24" fill="none" stroke="#2563eb" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -17,6 +17,7 @@ const TEAM_COLORS = [
 
 let state = loadState();
 let settingsDraft = null;
+let deferredInstallPrompt = null;
 
 const ui = {
   form: document.querySelector("#participantForm"),
@@ -28,6 +29,7 @@ const ui = {
   lastAssigned: document.querySelector("#lastAssigned"),
   teamGrid: document.querySelector("#teamGrid"),
   participantTemplate: document.querySelector("#participantTemplate"),
+  installButton: document.querySelector("#installButton"),
   settingsButton: document.querySelector("#settingsButton"),
   resetButton: document.querySelector("#resetButton"),
   settingsDialog: document.querySelector("#settingsDialog"),
@@ -36,12 +38,42 @@ const ui = {
 };
 
 ui.form.addEventListener("submit", addParticipant);
+ui.installButton.addEventListener("click", installApp);
 ui.settingsButton.addEventListener("click", openSettings);
 ui.resetButton.addEventListener("click", resetAll);
 ui.settingsForm.addEventListener("submit", saveSettings);
 ui.settingsDialog.addEventListener("click", closeOnBackdrop);
+window.addEventListener("beforeinstallprompt", prepareInstall);
+window.addEventListener("appinstalled", finishInstall);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(error => {
+      console.error("Service Worker 등록 실패:", error);
+    });
+  });
+}
 
 render();
+
+function prepareInstall(event) {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  ui.installButton.hidden = false;
+}
+
+async function installApp() {
+  if (!deferredInstallPrompt) return;
+  await deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  ui.installButton.hidden = true;
+}
+
+function finishInstall() {
+  deferredInstallPrompt = null;
+  ui.installButton.hidden = true;
+}
 
 function loadState() {
   try {

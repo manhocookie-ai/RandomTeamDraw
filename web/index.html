@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f6fa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>랜덤 조 편성</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
@@ -53,6 +58,7 @@
     <footer class="actions">
       <p class="storage-note">데이터는 현재 브라우저에만 저장됩니다.</p>
       <div>
+        <button id="installButton" class="button primary" type="button" hidden>앱 설치</button>
         <button id="settingsButton" class="button neutral" type="button">설정</button>
         <button id="resetButton" class="button danger" type="button">전체 초기화</button>
       </div>

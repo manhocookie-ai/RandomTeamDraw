@@ -5,11 +5,12 @@
 
 ## 웹 버전
 
-`web/` 폴더는 HTML/CSS/JavaScript만 사용하는 정적 웹앱입니다. 참가자 명단, 마지막 배정,
+`web/` 폴더는 HTML/CSS/JavaScript만 사용하는 설치형 PWA입니다. 참가자 명단, 마지막 배정,
 조 이름과 조별 가중치를 현재 브라우저의 `localStorage`에 저장합니다. 서버나 데이터베이스는
 사용하지 않으며, 다른 브라우저나 기기와 데이터가 자동으로 공유되지 않습니다.
 
-로컬에서는 `web/index.html`을 직접 열어도 되고, 개발용 서버가 있다면 다음처럼 실행할 수 있습니다.
+웹 기능만 확인할 때는 `web/index.html`을 직접 열 수 있습니다. 앱 설치와 오프라인 캐시는
+HTTPS 또는 localhost가 필요하므로 개발용 서버에서는 다음처럼 실행합니다.
 
 ```powershell
 python -m http.server 8080 --directory web
@@ -18,6 +19,10 @@ python -m http.server 8080 --directory web
 GitHub Pages 자동 배포 워크플로가 `.github/workflows/deploy-pages.yml`에 포함되어 있습니다.
 GitHub 저장소의 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로
 한 번 지정한 뒤 `main` 브랜치에 push하면 웹 버전이 자동 배포됩니다.
+
+배포 주소를 Edge 또는 Chrome에서 연 뒤 브라우저의 설치 메뉴나 화면 하단의 `앱 설치`
+버튼을 사용하면 Windows 시작 메뉴와 독립 창에서 실행할 수 있습니다. 설치 버튼은 브라우저가
+설치 가능 상태로 판단할 때만 표시됩니다. 첫 온라인 실행이 완료된 뒤에는 오프라인에서도 열립니다.
 
 ## 주요 기능
 
