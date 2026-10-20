@@ -1,0 +1,54 @@
+<Window x:Class="RandomTeamDraw.TeamWeightSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="조별 배정 가중치" Width="420" Height="390"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PageBackground}" Foreground="{StaticResource BodyText}"
+        FontFamily="Segoe UI, Malgun Gothic" FontSize="14">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="18" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="조별 배정 가중치" FontSize="21" FontWeight="Bold" />
+            <TextBlock Margin="0,7,0,0" Foreground="{StaticResource MutedText}" TextWrapping="Wrap"
+                       Text="배정 시 현재 인원에 가중치를 더해 계산합니다. -1은 한 명 더, +1은 한 명 덜 배정하는 효과가 있습니다." />
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="{StaticResource CardBackground}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                CornerRadius="12" Padding="18">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="38" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="38" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding TeamName}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="−" Style="{StaticResource NeutralButton}" Margin="2"
+                                    Click="Decrease_OnClick" Tag="{Binding}" />
+                            <TextBlock Grid.Column="2" Text="{Binding Weight, StringFormat={}{0:+0;-0;0}}"
+                                       FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button Grid.Column="3" Content="＋" Style="{StaticResource NeutralButton}" Margin="2"
+                                    Click="Increase_OnClick" Tag="{Binding}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="취소" Style="{StaticResource NeutralButton}" Click="Cancel_OnClick" />
+            <Button Content="저장" Style="{StaticResource PrimaryButton}" Click="Save_OnClick" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6fa">
+  <title>랜덤 조 편성</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">RANDOM TEAM DRAW</p>
+        <h1>랜덤 조 편성</h1>
+      </div>
+      <div class="save-state" role="status" aria-live="polite">
+        <span class="save-dot"></span>
+        <span id="saveStatus">이 브라우저에 저장됨</span>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="panel registration" aria-labelledby="registrationTitle">
+        <h2 id="registrationTitle">참가자 등록</h2>
+        <form id="participantForm" novalidate>
+          <label class="sr-only" for="nameInput">참가자 이름</label>
+          <input id="nameInput" name="name" maxlength="30" autocomplete="off"
+                 placeholder="참가자 이름" autofocus>
+          <button class="button primary wide" type="submit">＋ 추가</button>
+          <p id="validationMessage" class="validation" aria-live="polite"></p>
+        </form>
+
+        <div class="section-heading">
+          <h2>참가자 명단</h2>
+          <span id="participantCount">0명</span>
+        </div>
+        <div id="participantList" class="participant-list"></div>
+      </section>
+
+      <section class="panel results" aria-labelledby="resultsTitle">
+        <div class="section-heading results-heading">
+          <h2 id="resultsTitle">조 편성 현황</h2>
+          <span id="totalCount">총 0명</span>
+        </div>
+
+        <div id="lastAssigned" class="last-assigned" hidden aria-live="polite"></div>
+        <div id="teamGrid" class="team-grid"></div>
+      </section>
+    </div>
+
+    <footer class="actions">
+      <p class="storage-note">데이터는 현재 브라우저에만 저장됩니다.</p>
+      <div>
+        <button id="settingsButton" class="button neutral" type="button">조 설정</button>
+        <button id="resetButton" class="button danger" type="button">전체 초기화</button>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="settingsDialog">
+    <form id="settingsForm" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">SETTINGS</p>
+          <h2>조 설정</h2>
+        </div>
+        <button class="icon-button" value="cancel" aria-label="닫기" type="submit">×</button>
+      </div>
+      <p class="dialog-description">조 이름과 배정 가중치를 설정합니다. −1은 한 명 더, +1은 한 명 덜 배정하는 효과가 있습니다.</p>
+      <div id="settingsRows" class="settings-rows"></div>
+      <div class="dialog-actions">
+        <button class="button neutral" value="cancel" type="submit">취소</button>
+        <button id="saveSettingsButton" class="button primary" value="default" type="submit">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="participantTemplate">
+    <article class="participant-row">
+      <div class="participant-summary">
+        <strong class="participant-name"></strong>
+        <span class="participant-team"></span>
+      </div>
+      <form class="edit-form" hidden>
+        <label class="sr-only">수정할 이름</label>
+        <input class="edit-input" maxlength="30" autocomplete="off">
+      </form>
+      <div class="row-actions normal-actions">
+        <button class="text-button edit" type="button">수정</button>
+        <button class="text-button delete" type="button">삭제</button>
+      </div>
+      <div class="row-actions edit-actions" hidden>
+        <button class="text-button save" type="button">저장</button>
+        <button class="text-button cancel" type="button">취소</button>
+      </div>
+    </article>
+  </template>
+</body>
+</html>

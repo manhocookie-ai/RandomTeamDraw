@@ -1,0 +1,321 @@
+"use strict";
+
+const STORAGE_KEY = "random-team-draw.session.v1";
+const DEFAULT_STATE = Object.freeze({
+  version: 1,
+  participants: [],
+  lastAssignedId: null,
+  teamNames: ["1조", "2조", "3조", "4조"],
+  teamWeights: [0, 0, 0, 0]
+});
+const TEAM_COLORS = [
+  ["#2563eb", "#bfdbfe"],
+  ["#059669", "#a7f3d0"],
+  ["#9333ea", "#e9d5ff"],
+  ["#d97706", "#fed7aa"]
+];
+
+let state = loadState();
+let settingsDraft = null;
+
+const ui = {
+  form: document.querySelector("#participantForm"),
+  nameInput: document.querySelector("#nameInput"),
+  validation: document.querySelector("#validationMessage"),
+  participantList: document.querySelector("#participantList"),
+  participantCount: document.querySelector("#participantCount"),
+  totalCount: document.querySelector("#totalCount"),
+  lastAssigned: document.querySelector("#lastAssigned"),
+  teamGrid: document.querySelector("#teamGrid"),
+  participantTemplate: document.querySelector("#participantTemplate"),
+  settingsButton: document.querySelector("#settingsButton"),
+  resetButton: document.querySelector("#resetButton"),
+  settingsDialog: document.querySelector("#settingsDialog"),
+  settingsForm: document.querySelector("#settingsForm"),
+  settingsRows: document.querySelector("#settingsRows")
+};
+
+ui.form.addEventListener("submit", addParticipant);
+ui.settingsButton.addEventListener("click", openSettings);
+ui.resetButton.addEventListener("click", resetAll);
+ui.settingsForm.addEventListener("submit", saveSettings);
+ui.settingsDialog.addEventListener("click", closeOnBackdrop);
+
+render();
+
+function loadState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.participants)) return structuredClone(DEFAULT_STATE);
+    return {
+      version: 1,
+      participants: parsed.participants.filter(isValidParticipant),
+      lastAssignedId: typeof parsed.lastAssignedId === "string" ? parsed.lastAssignedId : null,
+      teamNames: normalizeTeamNames(parsed.teamNames),
+      teamWeights: normalizeWeights(parsed.teamWeights)
+    };
+  } catch {
+    return structuredClone(DEFAULT_STATE);
+  }
+}
+
+function isValidParticipant(participant) {
+  return participant && typeof participant.id === "string" && typeof participant.name === "string" &&
+    Number.isInteger(participant.teamNumber) && participant.teamNumber >= 1 && participant.teamNumber <= 4;
+}
+
+function normalizeTeamNames(names) {
+  return DEFAULT_STATE.teamNames.map((fallback, index) => {
+    const name = Array.isArray(names) && typeof names[index] === "string" ? names[index].trim() : "";
+    return name && name.length <= 20 ? name : fallback;
+  });
+}
+
+function normalizeWeights(weights) {
+  return [0, 1, 2, 3].map(index => Math.max(-10, Math.min(10,
+    Number.isInteger(weights?.[index]) ? weights[index] : 0)));
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    document.querySelector("#saveStatus").textContent = "저장 실패";
+    document.querySelector(".save-dot").style.background = "#ef4444";
+  }
+}
+
+function addParticipant(event) {
+  event.preventDefault();
+  const name = validateName(ui.nameInput.value);
+  if (!name) return;
+
+  const participant = { id: crypto.randomUUID(), name, teamNumber: chooseTeam() };
+  state.participants.push(participant);
+  state.lastAssignedId = participant.id;
+  ui.nameInput.value = "";
+  ui.validation.textContent = "";
+  commit();
+  ui.nameInput.focus();
+}
+
+function validateName(value, editingId = null) {
+  const name = value.trim();
+  if (!name) return showValidation("이름을 입력해 주세요.");
+  if (name.length > 30) return showValidation("이름은 30자까지 입력할 수 있습니다.");
+  const duplicate = state.participants.some(person => person.id !== editingId && person.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+  if (duplicate) return showValidation("이미 등록된 이름입니다.");
+  return name;
+}
+
+function showValidation(message) {
+  ui.validation.textContent = message;
+  return null;
+}
+
+function chooseTeam() {
+  const scores = [1, 2, 3, 4].map((teamNumber, index) =>
+    state.participants.filter(person => person.teamNumber === teamNumber).length + state.teamWeights[index]);
+  const minimum = Math.min(...scores);
+  const candidates = scores.map((score, index) => score === minimum ? index + 1 : null).filter(Boolean);
+  return candidates[randomIndex(candidates.length)];
+}
+
+function randomIndex(length) {
+  const max = Math.floor(0x100000000 / length) * length;
+  const buffer = new Uint32Array(1);
+  do crypto.getRandomValues(buffer); while (buffer[0] >= max);
+  return buffer[0] % length;
+}
+
+function commit() {
+  saveState();
+  render();
+}
+
+function render() {
+  ui.participantList.replaceChildren(...state.participants.map(createParticipantRow));
+  ui.participantCount.textContent = `${state.participants.length}명`;
+  ui.totalCount.textContent = `총 ${state.participants.length}명`;
+  renderLastAssigned();
+  renderTeams();
+}
+
+function createParticipantRow(person) {
+  const row = ui.participantTemplate.content.firstElementChild.cloneNode(true);
+  row.dataset.id = person.id;
+  row.classList.toggle("highlight", person.id === state.lastAssignedId);
+  row.querySelector(".participant-name").textContent = person.name;
+  row.querySelector(".participant-team").textContent = state.teamNames[person.teamNumber - 1];
+  row.querySelector(".edit").addEventListener("click", () => beginEdit(row, person));
+  row.querySelector(".delete").addEventListener("click", () => deleteParticipant(person.id));
+  row.querySelector(".save").addEventListener("click", () => saveEdit(row, person));
+  row.querySelector(".cancel").addEventListener("click", () => cancelEdit(row));
+  row.querySelector(".edit-form").addEventListener("submit", event => {
+    event.preventDefault();
+    saveEdit(row, person);
+  });
+  return row;
+}
+
+function beginEdit(row, person) {
+  document.querySelectorAll(".participant-row.editing").forEach(cancelEdit);
+  row.classList.add("editing");
+  row.querySelector(".participant-summary").hidden = true;
+  row.querySelector(".normal-actions").hidden = true;
+  row.querySelector(".edit-form").hidden = false;
+  row.querySelector(".edit-actions").hidden = false;
+  const input = row.querySelector(".edit-input");
+  input.value = person.name;
+  input.focus();
+  input.select();
+}
+
+function cancelEdit(row) {
+  row.classList.remove("editing");
+  row.querySelector(".participant-summary").hidden = false;
+  row.querySelector(".normal-actions").hidden = false;
+  row.querySelector(".edit-form").hidden = true;
+  row.querySelector(".edit-actions").hidden = true;
+}
+
+function saveEdit(row, person) {
+  const name = validateName(row.querySelector(".edit-input").value, person.id);
+  if (!name) return;
+  person.name = name;
+  ui.validation.textContent = "";
+  commit();
+}
+
+function deleteParticipant(id) {
+  state.participants = state.participants.filter(person => person.id !== id);
+  if (state.lastAssignedId === id) state.lastAssignedId = null;
+  ui.validation.textContent = "";
+  commit();
+}
+
+function renderLastAssigned() {
+  const person = state.participants.find(candidate => candidate.id === state.lastAssignedId);
+  if (!person) {
+    ui.lastAssigned.hidden = true;
+    ui.lastAssigned.replaceChildren();
+    return;
+  }
+  const label = document.createElement("small");
+  label.textContent = "방금 배정";
+  const name = document.createElement("strong");
+  name.textContent = person.name;
+  const team = document.createElement("span");
+  team.textContent = state.teamNames[person.teamNumber - 1];
+  ui.lastAssigned.replaceChildren(label, name, team);
+  ui.lastAssigned.hidden = false;
+}
+
+function renderTeams() {
+  const cards = [1, 2, 3, 4].map((teamNumber, index) => {
+    const card = document.createElement("section");
+    card.className = "team-card";
+    card.style.setProperty("--team", TEAM_COLORS[index][0]);
+    card.style.setProperty("--team-light", TEAM_COLORS[index][1]);
+    const members = state.participants.filter(person => person.teamNumber === teamNumber);
+    const title = document.createElement("h3");
+    title.textContent = state.teamNames[index];
+    const count = document.createElement("p");
+    count.className = "team-count";
+    count.textContent = `${members.length}명`;
+    const list = document.createElement("div");
+    list.className = "team-members";
+    if (!members.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-team";
+      empty.textContent = "배정 대기";
+      list.append(empty);
+    } else {
+      members.forEach(person => {
+        const member = document.createElement("div");
+        member.className = "team-member";
+        member.classList.toggle("highlight", person.id === state.lastAssignedId);
+        member.textContent = person.name;
+        member.title = person.name;
+        list.append(member);
+      });
+    }
+    card.append(title, count, list);
+    return card;
+  });
+  ui.teamGrid.replaceChildren(...cards);
+}
+
+function openSettings() {
+  settingsDraft = { teamNames: [...state.teamNames], teamWeights: [...state.teamWeights] };
+  renderSettings();
+  ui.settingsDialog.showModal();
+}
+
+function renderSettings() {
+  const rows = settingsDraft.teamNames.map((teamName, index) => {
+    const row = document.createElement("div");
+    row.className = "settings-row";
+    const label = document.createElement("label");
+    label.textContent = `${index + 1}조 이름`;
+    const input = document.createElement("input");
+    input.maxLength = 20;
+    input.value = teamName;
+    input.addEventListener("input", () => settingsDraft.teamNames[index] = input.value);
+    label.append(input);
+    const control = document.createElement("div");
+    control.className = "weight-control";
+    const decrease = weightButton("−", () => updateDraftWeight(index, -1));
+    const value = document.createElement("span");
+    value.className = "weight-value";
+    value.textContent = formatWeight(settingsDraft.teamWeights[index]);
+    const increase = weightButton("＋", () => updateDraftWeight(index, 1));
+    control.append(decrease, value, increase);
+    row.append(label, control);
+    return row;
+  });
+  ui.settingsRows.replaceChildren(...rows);
+}
+
+function weightButton(label, action) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", action);
+  return button;
+}
+
+function updateDraftWeight(index, delta) {
+  settingsDraft.teamWeights[index] = Math.max(-10, Math.min(10, settingsDraft.teamWeights[index] + delta));
+  renderSettings();
+}
+
+function formatWeight(weight) { return weight > 0 ? `+${weight}` : String(weight); }
+
+function saveSettings(event) {
+  if (event.submitter?.value !== "default") return;
+  event.preventDefault();
+  const names = settingsDraft.teamNames.map(name => name.trim());
+  if (names.some(name => !name || name.length > 20)) {
+    alert("조 이름은 공백이 아닌 20자 이하로 입력해 주세요.");
+    return;
+  }
+  state.teamNames = names;
+  state.teamWeights = [...settingsDraft.teamWeights];
+  commit();
+  ui.settingsDialog.close();
+  ui.nameInput.focus();
+}
+
+function closeOnBackdrop(event) {
+  if (event.target === ui.settingsDialog) ui.settingsDialog.close();
+}
+
+function resetAll() {
+  if (!confirm("모든 참가자와 조 편성 결과를 초기화할까요?\n조 이름과 가중치 설정은 유지됩니다.")) return;
+  state.participants = [];
+  state.lastAssignedId = null;
+  ui.validation.textContent = "";
+  commit();
+  ui.nameInput.focus();
+}
