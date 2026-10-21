@@ -7,7 +7,8 @@ const DEFAULT_STATE = Object.freeze({
   pendingOrder: [],
   lastAssignedId: null,
   teamNames: ["1조", "2조", "3조", "4조"],
-  teamWeights: [0, 0, 0, 0]
+  teamWeights: [0, 0, 0, 0],
+  animationSpeed: 1
 });
 const TEAM_COLORS = [
   ["#2563eb", "#bfdbfe"],
@@ -90,7 +91,8 @@ function loadState() {
       pendingOrder: normalizePendingOrder(parsed.pendingOrder, parsed.participants),
       lastAssignedId: typeof parsed.lastAssignedId === "string" ? parsed.lastAssignedId : null,
       teamNames: normalizeTeamNames(parsed.teamNames),
-      teamWeights: normalizeWeights(parsed.teamWeights)
+      teamWeights: normalizeWeights(parsed.teamWeights),
+      animationSpeed: normalizeAnimationSpeed(parsed.animationSpeed)
     };
   } catch {
     return structuredClone(DEFAULT_STATE);
@@ -119,6 +121,10 @@ function normalizeTeamNames(names) {
 function normalizeWeights(weights) {
   return [0, 1, 2, 3].map(index => Math.max(-10, Math.min(10,
     Number.isInteger(weights?.[index]) ? weights[index] : 0)));
+}
+
+function normalizeAnimationSpeed(speed) {
+  return [0.7, 1, 1.35, 1.8].includes(speed) ? speed : 1;
 }
 
 function saveState() {
@@ -214,12 +220,15 @@ async function assignPending() {
   ui.nameInput.focus();
 }
 
-function assignmentDelay(count) { return count <= 12 ? 80 : count <= 30 ? 45 : 15; }
+function assignmentDelay(count) {
+  const baseDelay = count <= 12 ? 80 : count <= 30 ? 45 : 15;
+  return Math.round(baseDelay / state.animationSpeed);
+}
 function delay(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
 
 function setBusy(busy) {
   isBusy = busy;
-  document.querySelectorAll("button, input").forEach(control => control.disabled = busy);
+  document.querySelectorAll("button, input, select").forEach(control => control.disabled = busy);
   if (!busy) updateActionButtons();
   document.body.classList.toggle("busy", busy);
 }
@@ -278,7 +287,7 @@ function animateAssignment(participantId) {
     { transform: "translate(0, -8px) scale(1.015)", opacity: 1, offset: .16 },
     { transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`, opacity: .92, offset: 1 }
   ], {
-    duration: 270,
+    duration: Math.round(270 / state.animationSpeed),
     easing: "cubic-bezier(.22, .82, .28, 1)",
     fill: "forwards"
   });
@@ -437,7 +446,11 @@ function isVisuallyAssigned(person) {
 }
 
 function openSettings() {
-  settingsDraft = { teamNames: [...state.teamNames], teamWeights: [...state.teamWeights] };
+  settingsDraft = {
+    teamNames: [...state.teamNames],
+    teamWeights: [...state.teamWeights],
+    animationSpeed: state.animationSpeed
+  };
   renderSettings();
   ui.settingsDialog.showModal();
 }
@@ -464,7 +477,27 @@ function renderSettings() {
     row.append(label, control);
     return row;
   });
-  ui.settingsRows.replaceChildren(...rows);
+  const speedRow = document.createElement("div");
+  speedRow.className = "settings-row speed-row";
+  const speedLabel = document.createElement("label");
+  speedLabel.textContent = "애니메이션 속도";
+  const speedSelect = document.createElement("select");
+  [
+    [0.7, "느리게"],
+    [1, "보통"],
+    [1.35, "빠르게"],
+    [1.8, "매우 빠르게"]
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = String(value);
+    option.textContent = label;
+    option.selected = settingsDraft.animationSpeed === value;
+    speedSelect.append(option);
+  });
+  speedSelect.addEventListener("change", () => settingsDraft.animationSpeed = Number(speedSelect.value));
+  speedLabel.append(speedSelect);
+  speedRow.append(speedLabel);
+  ui.settingsRows.replaceChildren(...rows, speedRow);
 }
 
 function weightButton(label, action) {
@@ -492,6 +525,7 @@ function saveSettings(event) {
   }
   state.teamNames = names;
   state.teamWeights = [...settingsDraft.teamWeights];
+  state.animationSpeed = settingsDraft.animationSpeed;
   commit();
   ui.settingsDialog.close();
   ui.nameInput.focus();
