@@ -28,7 +28,6 @@ const ui = {
   validation: document.querySelector("#validationMessage"),
   participantList: document.querySelector("#participantList"),
   participantCount: document.querySelector("#participantCount"),
-  shuffleButton: document.querySelector("#shuffleButton"),
   assignButton: document.querySelector("#assignButton"),
   totalCount: document.querySelector("#totalCount"),
   lastAssigned: document.querySelector("#lastAssigned"),
@@ -43,7 +42,6 @@ const ui = {
 };
 
 ui.form.addEventListener("submit", addParticipant);
-ui.shuffleButton.addEventListener("click", shufflePending);
 ui.assignButton.addEventListener("click", assignPending);
 ui.installButton.addEventListener("click", installApp);
 ui.settingsButton.addEventListener("click", openSettings);
@@ -142,7 +140,7 @@ function addParticipant(event) {
 
   const participant = { id: crypto.randomUUID(), name, teamNumber: null };
   state.participants.push(participant);
-  state.pendingOrder.push(participant.id);
+  state.pendingOrder.splice(randomIndex(state.pendingOrder.length + 1), 0, participant.id);
   ui.nameInput.value = "";
   ui.validation.textContent = "";
   commit();
@@ -171,32 +169,11 @@ function chooseTeam(participants = state.participants) {
   return candidates[randomIndex(candidates.length)];
 }
 
-function shuffled(items) {
-  const result = [...items];
-  for (let index = result.length - 1; index > 0; index--) {
-    const target = randomIndex(index + 1);
-    [result[index], result[target]] = [result[target], result[index]];
-  }
-  return result;
-}
-
-async function shufflePending() {
-  if (isBusy || state.pendingOrder.length < 2) return;
-  setBusy(true);
-  ui.participantList.classList.add("shuffling");
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) await delay(650);
-  state.pendingOrder = shuffled(state.pendingOrder);
-  saveState();
-  render();
-  ui.participantList.classList.remove("shuffling");
-  setBusy(false);
-}
-
 async function assignPending() {
   if (isBusy || !state.pendingOrder.length) return;
   setBusy(true);
   const previousState = structuredClone(state);
-  const assignmentOrder = shuffled(state.pendingOrder);
+  const assignmentOrder = [...state.pendingOrder];
   const assigned = state.participants.filter(person => person.teamNumber !== null);
   const previouslyAssignedIds = assigned.map(person => person.id);
   const results = [];
@@ -320,11 +297,9 @@ function animateAssignment(participantId) {
 }
 
 function render() {
-  const order = new Map(state.pendingOrder.map((id, index) => [id, index]));
   const visibleParticipants = [...state.participants].sort((a, b) => {
     if (a.teamNumber === null && b.teamNumber !== null) return -1;
     if (a.teamNumber !== null && b.teamNumber === null) return 1;
-    if (a.teamNumber === null) return order.get(a.id) - order.get(b.id);
     return 0;
   });
   ui.participantList.replaceChildren(...visibleParticipants.map(createParticipantRow));
@@ -398,7 +373,6 @@ function deleteParticipant(id) {
 function updateActionButtons() {
   const pendingCount = state.pendingOrder.length;
   const hasAssigned = state.participants.some(person => person.teamNumber !== null);
-  ui.shuffleButton.disabled = isBusy || pendingCount < 2;
   ui.assignButton.disabled = isBusy || pendingCount === 0;
   ui.assignButton.textContent = pendingCount === 0
     ? "대기 참가자 없음"
