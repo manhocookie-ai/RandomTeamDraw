@@ -89,6 +89,9 @@ input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, .1
 .section-heading { margin: 10px 0 12px; }
 .section-heading span { color: #64748b; font-size: .875rem; }
 .participant-list { min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 7px; }
+.draw-actions { padding-top: 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
+.participant-list.shuffling .participant-row.pending { animation: shuffle-pulse .65s ease-in-out both; }
+.participant-list.shuffling .participant-row.pending:nth-child(even) { animation-direction: reverse; }
 
 .participant-row {
   min-width: 0;
@@ -104,6 +107,8 @@ input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, .1
 }
 
 .participant-row.highlight { background: #dbeafe; border: 2px solid #60a5fa; }
+.participant-row.pending { background: #fff7ed; border-color: #fed7aa; }
+.participant-row.pending .participant-team { color: #c2410c; font-weight: 750; }
 .participant-summary { min-width: 0; display: grid; }
 .participant-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .participant-team { color: #64748b; font-size: .75rem; }
@@ -120,6 +125,7 @@ input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, .1
 
 .button:active, .text-button:active, .icon-button:active { transform: translateY(1px); }
 .button { padding: 10px 15px; }
+.button:disabled, input:disabled { cursor: not-allowed; filter: grayscale(.2); opacity: .52; }
 .wide { width: 100%; }
 .primary { color: #fff; background: #2563eb; }
 .primary:hover { background: #1d4ed8; }
@@ -216,6 +222,11 @@ dialog form { padding: 22px; }
 
 @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
 @keyframes pop { from { opacity: 0; transform: scale(.97); } }
+@keyframes shuffle-pulse {
+  0%, 100% { transform: translateX(0) scale(1); }
+  35% { transform: translateX(10px) scale(.98); opacity: .72; }
+  70% { transform: translateX(-7px) scale(1.01); }
+}
 
 @media (max-width: 820px) {
   .app-shell { padding: 18px; }
@@ -235,6 +246,7 @@ dialog form { padding: 22px; }
   .actions > div { display: grid; grid-template-columns: 1fr 1fr; }
   .storage-note { margin: 0; text-align: center; }
   .settings-row { grid-template-columns: 1fr; }
+  .draw-actions { grid-template-columns: 1fr; }
   .weight-control { justify-content: end; }
 }
 
