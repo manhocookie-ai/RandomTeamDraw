@@ -193,7 +193,6 @@ dialog form { padding: 22px; }
   .workspace { grid-template-columns: 1fr; }
   .participant-list { max-height: 360px; }
   .team-card { min-height: 220px; }
-  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 540px) {
@@ -201,7 +200,6 @@ dialog form { padding: 22px; }
   .topbar { align-items: flex-start; }
   .save-state { margin-top: 7px; }
   .panel { padding: 15px; }
-  .team-grid { grid-template-columns: 1fr; }
   .team-card { min-height: 160px; }
   .actions { align-items: stretch; flex-direction: column; }
   .actions > div { display: grid; grid-template-columns: 1fr 1fr; }
