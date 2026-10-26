@@ -3,9 +3,9 @@
 const STORAGE_KEY = "random-team-draw.session.v1";
 const DEFAULT_STATE = Object.freeze({
   version: 1,
+  sharingTitle: "",
   participants: [],
   pendingOrder: [],
-  lastAssignedId: null,
   teamNames: ["1조", "2조", "3조", "4조"],
   teamWeights: [0, 0, 0, 0],
   animationSpeed: 1
@@ -27,11 +27,11 @@ const ui = {
   form: document.querySelector("#participantForm"),
   nameInput: document.querySelector("#nameInput"),
   validation: document.querySelector("#validationMessage"),
+  sharingTitle: document.querySelector("#sharingTitle"),
   participantList: document.querySelector("#participantList"),
   participantCount: document.querySelector("#participantCount"),
   assignButton: document.querySelector("#assignButton"),
   totalCount: document.querySelector("#totalCount"),
-  lastAssigned: document.querySelector("#lastAssigned"),
   teamGrid: document.querySelector("#teamGrid"),
   participantTemplate: document.querySelector("#participantTemplate"),
   installButton: document.querySelector("#installButton"),
@@ -43,6 +43,7 @@ const ui = {
 };
 
 ui.form.addEventListener("submit", addParticipant);
+ui.sharingTitle.addEventListener("input", updateSharingTitle);
 ui.assignButton.addEventListener("click", assignPending);
 ui.installButton.addEventListener("click", installApp);
 ui.settingsButton.addEventListener("click", openSettings);
@@ -87,9 +88,9 @@ function loadState() {
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.participants)) return structuredClone(DEFAULT_STATE);
     return {
       version: 1,
+      sharingTitle: typeof parsed.sharingTitle === "string" ? parsed.sharingTitle.slice(0, 100) : "",
       participants: parsed.participants.filter(isValidParticipant),
       pendingOrder: normalizePendingOrder(parsed.pendingOrder, parsed.participants),
-      lastAssignedId: typeof parsed.lastAssignedId === "string" ? parsed.lastAssignedId : null,
       teamNames: normalizeTeamNames(parsed.teamNames),
       teamWeights: normalizeWeights(parsed.teamWeights),
       animationSpeed: normalizeAnimationSpeed(parsed.animationSpeed)
@@ -136,6 +137,11 @@ function saveState() {
     document.querySelector(".save-dot").style.background = "#ef4444";
     return false;
   }
+}
+
+function updateSharingTitle() {
+  state.sharingTitle = ui.sharingTitle.value.slice(0, 100);
+  saveState();
 }
 
 function addParticipant(event) {
@@ -191,7 +197,6 @@ async function assignPending() {
     results.push(person.id);
   });
   state.pendingOrder = [];
-  state.lastAssignedId = results.at(-1) ?? state.lastAssignedId;
   if (!saveState()) {
     state = previousState;
     render();
@@ -206,13 +211,9 @@ async function assignPending() {
     revealedIds = new Set(previouslyAssignedIds);
     for (const id of results) {
       revealedIds.add(id);
-      state.lastAssignedId = id;
       render();
-      await animateAssignment(id);
       await delay(assignmentDelay(results.length));
     }
-    state.lastAssignedId = results.at(-1) ?? null;
-    saveState();
     revealedIds = null;
     render();
   }
@@ -228,7 +229,7 @@ function delay(milliseconds) { return new Promise(resolve => setTimeout(resolve,
 
 function setBusy(busy) {
   isBusy = busy;
-  document.querySelectorAll("button, input, select").forEach(control => control.disabled = busy);
+  document.querySelectorAll("button, input, select, textarea").forEach(control => control.disabled = busy);
   if (!busy) updateActionButtons();
   document.body.classList.toggle("busy", busy);
 }
@@ -240,72 +241,13 @@ function randomIndex(length) {
   return buffer[0] % length;
 }
 
-function commit(animateParticipantId = null) {
+function commit() {
   saveState();
   render();
-  if (animateParticipantId) {
-    requestAnimationFrame(() => animateAssignment(animateParticipantId));
-  }
-}
-
-function animateAssignment(participantId) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
-
-  const person = state.participants.find(candidate => candidate.id === participantId);
-  const target = ui.teamGrid.querySelector(`.team-member[data-participant-id="${CSS.escape(participantId)}"]`);
-  if (!person || !target || ui.lastAssigned.hidden) return Promise.resolve();
-
-  const sourceRect = ui.lastAssigned.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-  if (!sourceRect.width || !targetRect.width) return Promise.resolve();
-
-  const flight = document.createElement("div");
-  flight.className = "assignment-flight";
-  flight.style.setProperty("--flight-team-color", TEAM_COLORS[person.teamNumber - 1][0]);
-  flight.style.left = `${sourceRect.left}px`;
-  flight.style.top = `${sourceRect.top}px`;
-  flight.style.width = `${sourceRect.width}px`;
-  flight.style.height = `${sourceRect.height}px`;
-
-  const label = document.createElement("small");
-  label.textContent = "배정 완료";
-  const name = document.createElement("strong");
-  name.textContent = person.name;
-  const team = document.createElement("span");
-  team.textContent = state.teamNames[person.teamNumber - 1];
-  flight.append(label, name, team);
-  document.body.append(flight);
-
-  target.classList.add("receiving");
-  const translateX = targetRect.left - sourceRect.left;
-  const translateY = targetRect.top - sourceRect.top;
-  const scaleX = targetRect.width / sourceRect.width;
-  const scaleY = targetRect.height / sourceRect.height;
-
-  const animation = flight.animate([
-    { transform: "translate(0, 0) scale(1)", opacity: 1, offset: 0 },
-    { transform: "translate(0, -8px) scale(1.015)", opacity: 1, offset: .16 },
-    { transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`, opacity: .92, offset: 1 }
-  ], {
-    duration: Math.round(270 / state.animationSpeed),
-    easing: "cubic-bezier(.22, .82, .28, 1)",
-    fill: "forwards"
-  });
-
-  return animation.finished
-    .catch(() => undefined)
-    .finally(() => {
-      flight.remove();
-      target.classList.remove("receiving");
-      target.animate([
-        { transform: "scale(.96)", boxShadow: "0 0 0 0 rgba(37, 99, 235, .35)" },
-        { transform: "scale(1.035)", boxShadow: "0 0 0 7px rgba(37, 99, 235, 0)" },
-        { transform: "scale(1)", boxShadow: "none" }
-      ], { duration: 360, easing: "ease-out" });
-    });
 }
 
 function render() {
+  if (document.activeElement !== ui.sharingTitle) ui.sharingTitle.value = state.sharingTitle;
   const visibleParticipants = [...state.participants].sort((a, b) => {
     if (a.teamNumber === null && b.teamNumber !== null) return -1;
     if (a.teamNumber !== null && b.teamNumber === null) return 1;
@@ -316,14 +258,12 @@ function render() {
   const assignedCount = state.participants.filter(person => person.teamNumber !== null).length;
   ui.totalCount.textContent = `배정 ${assignedCount}명`;
   updateActionButtons();
-  renderLastAssigned();
   renderTeams();
 }
 
 function createParticipantRow(person) {
   const row = ui.participantTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = person.id;
-  row.classList.toggle("highlight", person.id === state.lastAssignedId);
   row.querySelector(".participant-name").textContent = person.name;
   const visuallyAssigned = isVisuallyAssigned(person);
   row.classList.toggle("pending", !visuallyAssigned);
@@ -374,7 +314,6 @@ function deleteParticipant(id) {
   if (isBusy) return;
   state.participants = state.participants.filter(person => person.id !== id);
   state.pendingOrder = state.pendingOrder.filter(candidate => candidate !== id);
-  if (state.lastAssignedId === id) state.lastAssignedId = null;
   ui.validation.textContent = "";
   commit();
 }
@@ -386,23 +325,6 @@ function updateActionButtons() {
   ui.assignButton.textContent = pendingCount === 0
     ? "대기 참가자 없음"
     : hasAssigned ? `대기 ${pendingCount}명 추가 배정` : `${pendingCount}명 조 편성 시작`;
-}
-
-function renderLastAssigned() {
-  const person = state.participants.find(candidate => candidate.id === state.lastAssignedId);
-  if (!person) {
-    ui.lastAssigned.hidden = true;
-    ui.lastAssigned.replaceChildren();
-    return;
-  }
-  const label = document.createElement("small");
-  label.textContent = "방금 배정";
-  const name = document.createElement("strong");
-  name.textContent = person.name;
-  const team = document.createElement("span");
-  team.textContent = state.teamNames[person.teamNumber - 1];
-  ui.lastAssigned.replaceChildren(label, name, team);
-  ui.lastAssigned.hidden = false;
 }
 
 function renderTeams() {
@@ -429,7 +351,6 @@ function renderTeams() {
         const member = document.createElement("div");
         member.className = "team-member";
         member.dataset.participantId = person.id;
-        member.classList.toggle("highlight", person.id === state.lastAssignedId);
         member.textContent = person.name;
         member.title = person.name;
         list.append(member);
@@ -540,7 +461,7 @@ function resetAll() {
   if (!confirm("모든 참가자와 조 편성 결과를 초기화할까요?\n조 이름과 가중치 설정은 유지됩니다.")) return;
   state.participants = [];
   state.pendingOrder = [];
-  state.lastAssignedId = null;
+  state.sharingTitle = "";
   ui.validation.textContent = "";
   commit();
   ui.nameInput.focus();

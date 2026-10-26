@@ -10,8 +10,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=6">
-  <script src="app.js?v=6" defer></script>
+  <link rel="stylesheet" href="styles.css?v=7">
+  <script src="app.js?v=7" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -25,6 +25,12 @@
         <span id="saveStatus">이 브라우저에 저장됨</span>
       </div>
     </header>
+
+    <section class="sharing-title" aria-labelledby="sharingTitleLabel">
+      <label id="sharingTitleLabel" for="sharingTitle">나눔 제목</label>
+      <textarea id="sharingTitle" maxlength="100" rows="2"
+                placeholder="오늘의 나눔 제목을 입력하세요"></textarea>
+    </section>
 
     <div class="workspace">
       <section class="panel registration" aria-labelledby="registrationTitle">
@@ -52,8 +58,6 @@
           <h2 id="resultsTitle">조 편성 현황</h2>
           <span id="totalCount">총 0명</span>
         </div>
-
-        <div id="lastAssigned" class="last-assigned" hidden aria-live="polite"></div>
         <div id="teamGrid" class="team-grid"></div>
       </section>
     </div>
