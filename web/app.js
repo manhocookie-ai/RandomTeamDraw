@@ -8,7 +8,7 @@ const DEFAULT_STATE = Object.freeze({
   pendingOrder: [],
   teamNames: ["1조", "2조", "3조", "4조"],
   teamWeights: [0, 0, 0, 0],
-  animationSpeed: 1
+  animationDelayMs: 500
 });
 const TEAM_COLORS = [
   ["#2563eb", "#bfdbfe"],
@@ -93,7 +93,7 @@ function loadState() {
       pendingOrder: normalizePendingOrder(parsed.pendingOrder, parsed.participants),
       teamNames: normalizeTeamNames(parsed.teamNames),
       teamWeights: normalizeWeights(parsed.teamWeights),
-      animationSpeed: normalizeAnimationSpeed(parsed.animationSpeed)
+      animationDelayMs: normalizeAnimationDelay(parsed.animationDelayMs, parsed.animationSpeed)
     };
   } catch {
     return structuredClone(DEFAULT_STATE);
@@ -124,8 +124,9 @@ function normalizeWeights(weights) {
     Number.isInteger(weights?.[index]) ? weights[index] : 0)));
 }
 
-function normalizeAnimationSpeed(speed) {
-  return [0.7, 1, 1.35, 1.8].includes(speed) ? speed : 1;
+function normalizeAnimationDelay(delay, legacySpeed) {
+  if ([1000, 500, 200, 0].includes(delay)) return delay;
+  return new Map([[0.7, 1000], [1, 500], [1.35, 200], [1.8, 0]]).get(legacySpeed) ?? 500;
 }
 
 function saveState() {
@@ -205,14 +206,14 @@ async function assignPending() {
     return;
   }
 
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (state.animationDelayMs === 0 || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     render();
   } else {
     revealedIds = new Set(previouslyAssignedIds);
     for (const id of results) {
       revealedIds.add(id);
       render();
-      await delay(assignmentDelay(results.length));
+      await delay(state.animationDelayMs);
     }
     revealedIds = null;
     render();
@@ -221,10 +222,6 @@ async function assignPending() {
   ui.nameInput.focus();
 }
 
-function assignmentDelay(count) {
-  const baseDelay = count <= 12 ? 80 : count <= 30 ? 45 : 15;
-  return Math.round(baseDelay / state.animationSpeed);
-}
 function delay(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
 
 function setBusy(busy) {
@@ -370,7 +367,7 @@ function openSettings() {
   settingsDraft = {
     teamNames: [...state.teamNames],
     teamWeights: [...state.teamWeights],
-    animationSpeed: state.animationSpeed
+    animationDelayMs: state.animationDelayMs
   };
   renderSettings();
   ui.settingsDialog.showModal();
@@ -404,18 +401,18 @@ function renderSettings() {
   speedLabel.textContent = "애니메이션 속도";
   const speedSelect = document.createElement("select");
   [
-    [0.7, "느리게"],
-    [1, "보통"],
-    [1.35, "빠르게"],
-    [1.8, "매우 빠르게"]
+    [1000, "느리게 (1초)"],
+    [500, "보통 (0.5초)"],
+    [200, "빠르게 (0.2초)"],
+    [0, "한번에"]
   ].forEach(([value, label]) => {
     const option = document.createElement("option");
     option.value = String(value);
     option.textContent = label;
-    option.selected = settingsDraft.animationSpeed === value;
+    option.selected = settingsDraft.animationDelayMs === value;
     speedSelect.append(option);
   });
-  speedSelect.addEventListener("change", () => settingsDraft.animationSpeed = Number(speedSelect.value));
+  speedSelect.addEventListener("change", () => settingsDraft.animationDelayMs = Number(speedSelect.value));
   speedLabel.append(speedSelect);
   speedRow.append(speedLabel);
   ui.settingsRows.replaceChildren(...rows, speedRow);
@@ -446,7 +443,7 @@ function saveSettings(event) {
   }
   state.teamNames = names;
   state.teamWeights = [...settingsDraft.teamWeights];
-  state.animationSpeed = settingsDraft.animationSpeed;
+  state.animationDelayMs = settingsDraft.animationDelayMs;
   commit();
   ui.settingsDialog.close();
   ui.nameInput.focus();
