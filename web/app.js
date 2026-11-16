@@ -31,6 +31,7 @@ const ui = {
   participantList: document.querySelector("#participantList"),
   participantCount: document.querySelector("#participantCount"),
   assignButton: document.querySelector("#assignButton"),
+  reshuffleButton: document.querySelector("#reshuffleButton"),
   totalCount: document.querySelector("#totalCount"),
   teamGrid: document.querySelector("#teamGrid"),
   participantTemplate: document.querySelector("#participantTemplate"),
@@ -45,6 +46,7 @@ const ui = {
 ui.form.addEventListener("submit", addParticipant);
 ui.sharingTitle.addEventListener("input", updateSharingTitle);
 ui.assignButton.addEventListener("click", assignPending);
+ui.reshuffleButton.addEventListener("click", reshuffleTeams);
 ui.installButton.addEventListener("click", installApp);
 ui.settingsButton.addEventListener("click", openSettings);
 ui.resetButton.addEventListener("click", resetAll);
@@ -184,8 +186,26 @@ function chooseTeam(participants = state.participants) {
 
 async function assignPending() {
   if (isBusy || !state.pendingOrder.length) return;
+  await assignParticipants(false);
+}
+
+async function reshuffleTeams() {
+  if (isBusy || !state.participants.some(person => person.teamNumber !== null)) return;
+  await assignParticipants(true);
+}
+
+async function assignParticipants(reshuffle) {
   setBusy(true);
   const previousState = structuredClone(state);
+  ui.validation.textContent = "";
+  if (reshuffle) {
+    state.participants.forEach(person => person.teamNumber = null);
+    state.pendingOrder = state.participants.map(person => person.id);
+    for (let index = state.pendingOrder.length - 1; index > 0; index--) {
+      const target = randomIndex(index + 1);
+      [state.pendingOrder[index], state.pendingOrder[target]] = [state.pendingOrder[target], state.pendingOrder[index]];
+    }
+  }
   const assignmentOrder = [...state.pendingOrder];
   const assigned = state.participants.filter(person => person.teamNumber !== null);
   const previouslyAssignedIds = assigned.map(person => person.id);
@@ -275,6 +295,7 @@ function createParticipantRow(person) {
     event.preventDefault();
     saveEdit(row, person);
   });
+  row.querySelectorAll("button, input").forEach(control => control.disabled = isBusy);
   return row;
 }
 
@@ -319,6 +340,7 @@ function updateActionButtons() {
   const pendingCount = state.pendingOrder.length;
   const hasAssigned = state.participants.some(person => person.teamNumber !== null);
   ui.assignButton.disabled = isBusy || pendingCount === 0;
+  ui.reshuffleButton.disabled = isBusy || !hasAssigned;
   ui.assignButton.textContent = pendingCount === 0
     ? "대기 참가자 없음"
     : hasAssigned ? `대기 ${pendingCount}명 추가 배정` : `${pendingCount}명 조 편성 시작`;

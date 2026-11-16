@@ -10,8 +10,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=11">
-  <script src="app.js?v=8" defer></script>
+  <link rel="stylesheet" href="styles.css?v=12">
+  <script src="app.js?v=9" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -50,6 +50,8 @@
         <div id="participantList" class="participant-list"></div>
         <div class="draw-actions" aria-label="조 편성 실행">
           <button id="assignButton" class="button primary" type="button" disabled>0명 조 편성 시작</button>
+          <button id="reshuffleButton" class="button neutral" type="button" disabled
+                  title="대기 참가자를 포함한 전체 명단을 다시 섞어 배정합니다. 조 이름과 가중치는 유지됩니다.">랜덤하게 다시 넣기</button>
         </div>
       </section>
 

@@ -101,7 +101,7 @@ input:focus, select:focus, textarea:focus { border-color: #60a5fa; box-shadow: 0
 .section-heading { margin: 10px 0 12px; }
 .section-heading span { color: #64748b; font-size: .875rem; }
 .participant-list { min-height: 0; max-height: min(46vh, 480px); overflow-y: auto; display: grid; align-content: start; gap: 7px; padding-right: 4px; }
-.draw-actions { padding-top: 12px; display: grid; }
+.draw-actions { padding-top: 12px; display: grid; gap: 8px; }
 
 .participant-row {
   min-width: 0;

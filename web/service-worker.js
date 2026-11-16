@@ -1,12 +1,12 @@
 "use strict";
 
 const CACHE_PREFIX = "random-team-draw-";
-const CACHE_NAME = `${CACHE_PREFIX}v12`;
+const CACHE_NAME = `${CACHE_PREFIX}v13`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=11",
-  "./app.js?v=8",
+  "./styles.css?v=12",
+  "./app.js?v=9",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
