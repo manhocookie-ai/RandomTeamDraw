@@ -58,6 +58,7 @@ GitHub 저장소의 **Settings → Pages → Build and deployment → Source**�
 - [향후 제품 기획](docs/05_향후기획.md)
 - [PWA 품질 검증 계획](docs/06_PWA_검증계획.md)
 - [일괄 배정 기획](docs/07_일괄배정_기획.md)
+- [개발 표준 운영](docs/08_개발표준_운영.md) · [에이전트 작업 지침](AGENTS.md)
 
 ## 현재 검증
 

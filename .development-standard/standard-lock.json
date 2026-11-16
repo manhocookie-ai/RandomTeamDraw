@@ -1,0 +1,28 @@
+{
+  "lockVersion": "0.3.0",
+  "source": {
+    "repository": "manhocookie-ai/-ai-development-standard",
+    "commit": "2996c2914afb5808fd93dce5bd74d7e2ec99f3dd"
+  },
+  "standardDigest": "58dc070e959abdc6e8d0b7e8bfda6de45bb4b7ce278943342fafd90fd68dfa97",
+  "files": {
+    "rules/catalog.json": "989ba9231c47e8f6b34ed94ac111aec9618a816ce684fc6cd14f14686cff1a19",
+    "schemas/project.schema.json": "8e049f4d93716a4a015ac7a70f64949b43a3a655adcb88ce7b6627f2db985d33",
+    "schemas/roadmap.schema.json": "ea3c419205c2f490ae764c0d69fcd11674cb6b36148507675d7195a03424e2c3",
+    "schemas/task.schema.json": "4b1913b524131de8836677d1cff021f395599b03064415cf726481047402aac2",
+    "standards/ARCH.md": "7660e879ac767dca280026811e4cdcd032129bd0c8322a14a29ff26607405838",
+    "standards/AS.md": "b9e6c6c0e84f93a58f4e2c0af4bae73827dca934b5cb7089f10a9594479eb986",
+    "standards/CTX.md": "f076d777bacda2bde99d4862787e734f7376ab436a1198e4e38749cae426fc00",
+    "standards/DOC.md": "5d115a1bffa45253776e1edabfa2c881e43ff480736c230069c2d5453f3866f6",
+    "standards/HAR.md": "aa6c9ce98359f497b0de0a5fe34aecd58cbcb8ced0857d4ece9bb1d0c9e53063",
+    "standards/INDEX.md": "38557a6d0e8008cf68dfe5dc38c4bbb58c7b728e1a1de4713277022ddd328843",
+    "standards/QUALITY.md": "ceff946287f6434144f1a886b0278874cfaaffc047f62e00f516807570678838",
+    "standards/TECH.md": "8d5217553de95d85be40f30b4dfc572892673cef17e53ad95cc60fd38d1487a5"
+  },
+  "integration": {
+    "agentsFile": "AGENTS.md",
+    "sectionDigest": "14cfb8f02de63725f0c50d282a1b3ae72c26cc04cca09435f3d7109e8f8100b0",
+    "attributesFile": ".development-standard/.gitattributes",
+    "attributesDigest": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
+  }
+}

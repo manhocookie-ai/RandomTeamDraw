@@ -1,0 +1,55 @@
+{
+  "catalogVersion": "0.1.0",
+  "rules": [
+    {
+      "id": "AUDIT-001",
+      "name": "Technology marker inventory",
+      "description": "Reuse existing assessment to discover top-level stack hints, without requiring a particular stack.",
+      "policyRefs": ["standards/TECH.md"],
+      "method": "heuristic",
+      "appliesWhen": "always",
+      "defaultSeverity": "info",
+      "implementation": "technology"
+    },
+    {
+      "id": "AUDIT-002",
+      "name": "Governance and alternative documentation inventory",
+      "description": "Discover standard paths and existing documentation candidates; human review establishes equivalence. Absence does not establish a code quality defect.",
+      "policyRefs": ["standards/DOC.md", "standards/AS.md"],
+      "method": "heuristic",
+      "appliesWhen": "always",
+      "defaultSeverity": "info",
+      "implementation": "documentation"
+    },
+    {
+      "id": "AUDIT-003",
+      "name": "Project metadata validation",
+      "description": "Validate existing docs/project.json against the unchanged canonical project schema, including date formats.",
+      "policyRefs": ["standards/DOC.md"],
+      "method": "automated",
+      "appliesWhen": "project_metadata_exists",
+      "defaultSeverity": "error",
+      "implementation": "metadata"
+    },
+    {
+      "id": "AUDIT-004",
+      "name": "CI, build and test configuration inventory",
+      "description": "Discover recognizable configuration and test candidates. Do not execute commands or infer that gates pass.",
+      "policyRefs": ["standards/QUALITY.md", "standards/TECH.md"],
+      "method": "heuristic",
+      "appliesWhen": "always",
+      "defaultSeverity": "info",
+      "implementation": "configuration"
+    },
+    {
+      "id": "AUDIT-005",
+      "name": "Local documentation reference integrity",
+      "description": "Check explicit relative Markdown file links and task context paths. Report unverifiable references rather than assuming success.",
+      "policyRefs": ["standards/DOC.md", "standards/CTX.md"],
+      "method": "automated",
+      "appliesWhen": "document_references_present",
+      "defaultSeverity": "warning",
+      "implementation": "references"
+    }
+  ]
+}
